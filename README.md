@@ -1,26 +1,64 @@
-# PasarGuard Node – Railway Deploy (No VPS needed)
+# PasarGuard Node – Railway
 
-Deploys PasarGuard Node (https://github.com/PasarGuard/node) as a second Railway
-service, with a self-signed certificate baked into the image at build time so
-no external server is required to obtain the "Server CA" for the panel.
+این ریپو یک PasarGuard Node آماده برای Railway است.
 
-## Setup
+## راه‌اندازی
 
-1. Push this folder to its own GitHub repo.
-2. In your Railway project, click **+ New** → **GitHub Repo** → select this repo.
-   (Use the same Railway project as your PasarGuard panel, as a second service.)
-3. In this new service's **Variables** tab, add:
-   - `API_KEY` = a UUID you generate yourself (e.g. `uuidgen` or any UUID generator).
-     Example: `6d183b56-361e-4f9b-be2d-c571cdebae23`
-4. In this service's **Settings → Networking**, enable **TCP Proxy** and set the
-   target port to `62050`. Railway will give you a public `host:port` pair.
-5. Deploy. Once it's running, open this service's **Console/Shell** and run:
-   ```
-   cat /app/certs/ssl_cert.pem
-   ```
-   Copy the whole output (including the BEGIN/END lines).
-6. Go to your PasarGuard panel dashboard → Nodes → Add Node:
-   - Address: the TCP proxy host (without the port)
-   - Port: the TCP proxy port
-   - API Key: the same UUID you set in step 3
-   - Server CA: paste the certificate from step 5
+1. ریپو را به عنوان یک Service در همان Railway Project و Environment پنل Deploy کنید.
+2. اسم Service می‌تواند **هر چیزی** باشد؛ نیازی نیست `pasarguard-node` باشد.
+3. در Variables فقط این موارد را تنظیم کنید:
+
+```
+SERVICE_PORT=62050
+NODE_HOST=0.0.0.0
+API_KEY=<یک UUID اختصاصی برای همین Node>
+```
+
+4. در Settings → Networking، برای همین Service یک TCP Proxy روی target port `62050` بسازید.
+5. **Start Command را تغییر ندهید** و `sleep infinity` نگذارید. Docker image خودش Node را با `./main` اجرا می‌کند.
+6. Volume برای `/app/certs` لازم نیست؛ گواهی داخل image ساخته می‌شود.
+7. برای دریافت گواهی:
+
+```bash
+cat /app/certs/ssl_cert.pem
+```
+
+کل خروجی را در فیلد **Server CA / Certificate** پنل قرار دهید.
+
+## اتصال پنل به Node داخلی Railway
+
+اگر پنل و Node در همان Railway Project و Environment هستند، Address را با نام واقعی Service بنویسید:
+
+```
+<service-name>.railway.internal
+```
+
+مثلاً اگر Service را `iran-node` نام‌گذاری کرده‌اید:
+
+```
+iran-node.railway.internal
+```
+
+Port:
+
+```
+62050
+```
+
+API Key: همان مقدار `API_KEY` در Node.
+
+گواهی این image شامل wildcard زیر است و به نام Service خاصی وابسته نیست:
+
+```
+*.railway.internal
+```
+
+بنابراین تغییر نام Service به `pasarguard-node` اجباری نیست.
+
+## اتصال از طریق TCP Proxy
+
+اگر به‌جای شبکه داخلی Railway از TCP Proxy استفاده می‌کنید، Address و Port را از Railway بگیرید و همان Certificate را در پنل قرار دهید. در این حالت باید مقدار `NODE_DOMAIN` هنگام build با hostname مربوط به TCP Proxy هماهنگ باشد.
+
+## نکته مهم
+
+`API_KEY` را برای هر Node جداگانه و به صورت UUID تصادفی بسازید. مقدار API Key نمونه این README را مستقیماً برای سرویس واقعی استفاده نکنید.
