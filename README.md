@@ -1,26 +1,120 @@
-# PasarGuard Node – Railway Deploy (No VPS needed)
+# PasarGuard Node – Multi-Instance Railway
 
-Deploys PasarGuard Node (https://github.com/PasarGuard/node) as a second Railway
-service, with a self-signed certificate baked into the image at build time so
-no external server is required to obtain the "Server CA" for the panel.
+این ریپو برای اجرای چند **PasarGuard Node** مستقل روی Railway آماده شده است.
 
-## Setup
+## نکته مهم
 
-1. Push this folder to its own GitHub repo.
-2. In your Railway project, click **+ New** → **GitHub Repo** → select this repo.
-   (Use the same Railway project as your PasarGuard panel, as a second service.)
-3. In this new service's **Variables** tab, add:
-   - `API_KEY` = a UUID you generate yourself (e.g. `uuidgen` or any UUID generator).
-     Example: `6d183b56-361e-4f9b-be2d-c571cdebae23`
-4. In this service's **Settings → Networking**, enable **TCP Proxy** and set the
-   target port to `62050`. Railway will give you a public `host:port` pair.
-5. Deploy. Once it's running, open this service's **Console/Shell** and run:
-   ```
-   cat /app/certs/ssl_cert.pem
-   ```
-   Copy the whole output (including the BEGIN/END lines).
-6. Go to your PasarGuard panel dashboard → Nodes → Add Node:
-   - Address: the TCP proxy host (without the port)
-   - Port: the TCP proxy port
-   - API Key: the same UUID you set in step 3
-   - Server CA: paste the certificate from step 5
+محدودیت تعداد Node از طرف `API_KEY` در خود Node وجود ندارد؛ هر سرویس Railway یک Node مستقل است و می‌تواند API Key جداگانه، TCP Proxy جداگانه و تنظیمات خودش را داشته باشد.
+
+بنابراین می‌توانی از همین ریپو چند Service بسازی؛ مثلاً:
+
+- Node-IR
+- Node-US
+- Node-DE
+
+هر Service یک instance جدا از Node خواهد بود.
+
+## راه‌اندازی هر Service
+
+### 1. ساخت Service
+
+در Railway:
+
+**+ New → GitHub Repo → `emad1389/America-`**
+
+Branch را روی:
+
+```
+multi-node-railway
+```
+
+بگذار.
+
+برای هر Node یک Service جدا بساز.
+
+### 2. متغیرهای هر Service
+
+در **Variables** حداقل این دو مقدار را قرار بده:
+
+```
+API_KEY=یک UUID متفاوت برای این Node
+NODE_DOMAIN=hostname مربوط به TCP Proxy همین Service
+```
+
+مثال:
+
+Service اول:
+
+```
+API_KEY=11111111-1111-4111-8111-111111111111
+NODE_DOMAIN=hostname-node-1
+```
+
+Service دوم:
+
+```
+API_KEY=22222222-2222-4222-8222-222222222222
+NODE_DOMAIN=hostname-node-2
+```
+
+**نکته:** مقدار `NODE_DOMAIN` باید دقیقاً hostnameای باشد که Railway برای TCP Proxy همان Service می‌دهد، بدون پورت.
+
+Railway متغیرهای Service را در زمان Build هم در اختیار Dockerfile قرار می‌دهد، به شرطی که در Dockerfile با `ARG` تعریف شده باشند. این Dockerfile همین کار را انجام می‌دهد.
+
+### 3. TCP Proxy
+
+برای هر Service:
+
+**Settings → Networking → TCP Proxy**
+
+Target Port:
+
+```
+62050
+```
+
+Railway برای هر Service یک TCP Proxy جدا می‌دهد.
+
+### 4. Deploy
+
+بعد از Deploy، هر Service یک Node مستقل خواهد بود.
+
+برای گرفتن CA همان Service:
+
+```
+cat /app/certs/ssl_cert.pem
+```
+
+کل خروجی را کپی کن.
+
+### 5. افزودن به PasarGuard
+
+در پنل PasarGuard برای هر Node:
+
+- **Address:** hostname همان TCP Proxy
+- **Port:** پورت TCP Proxy همان Service
+- **API Key:** همان `API_KEY` همان Service
+- **Server CA:** گواهی همان Service
+
+هر Node باید CA و API Key خودش را داشته باشد.
+
+## نتیجه
+
+مثلاً می‌توانی داشته باشی:
+
+```
+PasarGuard Panel
+├── Node 1 → Railway Service 1 → Location 1
+├── Node 2 → Railway Service 2 → Location 2
+└── Node 3 → Railway Service 3 → Location 3
+```
+
+این تغییر فقط محدودیت و تنظیمات لازم برای اجرای چند instance را در ریپوی Railway برطرف می‌کند و کد اصلی PasarGuard Node را مستقیم fork یا تغییر نمی‌دهد.
+
+## منبع
+
+Node اصلی از:
+
+https://github.com/PasarGuard/node
+
+ساخته می‌شود.
