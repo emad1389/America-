@@ -25,7 +25,7 @@ RUN mkdir -p /src/certs && \
         -out /src/certs/ssl_cert.pem \
         -days 3650 -nodes \
         -subj "/CN=${NODE_DOMAIN}" \
-        -addext "subjectAltName = DNS:${NODE_DOMAIN},DNS:localhost,IP:127.0.0.1"
+        -addext "subjectAltName = DNS:${NODE_DOMAIN},DNS:*.railway.internal,DNS:localhost,IP:127.0.0.1"
 
 FROM alpine:latest
 
