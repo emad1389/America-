@@ -3,6 +3,7 @@ FROM --platform=$BUILDPLATFORM golang:1.26.3-alpine AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG NODE_DOMAIN=localhost
 
 RUN apk update && apk add --no-cache make git openssl
 
@@ -13,12 +14,11 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} make NAME=main build
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make install_xray
 
-# ساخت گواهی خودامضا (self-signed) که هم داخل ایمیج نود می‌ماند (برای TLS)
-# و هم محتوایش باید در فیلد "Server CA" پنل کپی شود.
-# دامنه TCP Proxy که Railway به این سرویس می‌دهد باید اینجا باشد وگرنه
-# پنل هنگام اتصال خطای "Hostname mismatch" می‌دهد.
-ARG NODE_DOMAIN=hayabusa.proxy.rlwy.net
-RUN mkdir -p /src/certs && \
+# Each Railway service can provide its own NODE_DOMAIN at build time.
+# The generated CA is copied into the image and must be added to the
+# corresponding PasarGuard panel node as "Server CA".
+RUN test -n "${NODE_DOMAIN}" && \
+    mkdir -p /src/certs && \
     openssl req -x509 -newkey ec \
         -pkeyopt ec_paramgen_curve:P-256 \
         -keyout /src/certs/ssl_key.pem \
