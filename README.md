@@ -39,6 +39,14 @@ cat /app/certs/ssl_cert.pem
 iran-node.railway.internal
 ```
 
+اگر نام واقعی Service در Railway برابر `america` باشد، آدرس داخلی آن:
+
+```
+america.railway.internal
+```
+
+این آدرس ثابت و عمومی نیست؛ باید دقیقاً با نام Service در Railway مطابقت داشته باشد و پنل و Node هم در یک Project و Environment باشند.
+
 Port:
 
 ```
