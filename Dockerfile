@@ -30,6 +30,5 @@ ENV SSL_CERT_FILE=/app/certs/ssl_cert.pem
 ENV SSL_KEY_FILE=/app/certs/ssl_key.pem
 ENV NODE_HOST=0.0.0.0
 ENV SERVICE_PORT=62050
-ENV TLS_SERVER_NAME=""
 
 ENTRYPOINT ["/entrypoint-railway.sh"]
