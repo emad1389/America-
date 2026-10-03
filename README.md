@@ -1,26 +1,18 @@
-# PasarGuard Node – Railway Deploy (No VPS needed)
+# PasarGuard Node – Railway Deploy
 
-Deploys PasarGuard Node (https://github.com/PasarGuard/node) as a second Railway
-service, with a self-signed certificate baked into the image at build time so
-no external server is required to obtain the "Server CA" for the panel.
+Deploys PasarGuard Node from https://github.com/PasarGuard/node as a separate Railway service.
 
 ## Setup
 
-1. Push this folder to its own GitHub repo.
-2. In your Railway project, click **+ New** → **GitHub Repo** → select this repo.
-   (Use the same Railway project as your PasarGuard panel, as a second service.)
-3. In this new service's **Variables** tab, add:
-   - `API_KEY` = a UUID you generate yourself (e.g. `uuidgen` or any UUID generator).
-     Example: `6d183b56-361e-4f9b-be2d-c571cdebae23`
-4. In this service's **Settings → Networking**, enable **TCP Proxy** and set the
-   target port to `62050`. Railway will give you a public `host:port` pair.
-5. Deploy. Once it's running, open this service's **Console/Shell** and run:
-   ```
-   cat /app/certs/ssl_cert.pem
-   ```
-   Copy the whole output (including the BEGIN/END lines).
-6. Go to your PasarGuard panel dashboard → Nodes → Add Node:
-   - Address: the TCP proxy host (without the port)
-   - Port: the TCP proxy port
-   - API Key: the same UUID you set in step 3
-   - Server CA: paste the certificate from step 5
+1. Deploy this repository as a second service in the same Railway project as the panel.
+2. The Docker image already defines these non-secret defaults:
+   - `NODE_HOST=0.0.0.0`
+   - `SERVICE_PORT=62050`
+3. In Railway service **Variables**, set `API_KEY` to a newly generated UUID. This is a secret and must not be committed to GitHub or placed in the Dockerfile.
+4. In **Settings → Networking**, enable TCP Proxy and set the target port to `62050`. Use the public host and port Railway assigns.
+5. Deploy. The entrypoint creates/maintains the node TLS certificate. Read its contents from `/app/certs/ssl_cert.pem` using the service shell when configuring the node in the panel.
+6. In the panel dashboard → Nodes → Add Node, enter the TCP proxy host, assigned port, the same secret API key, and the certificate contents as Server CA.
+
+## Security
+
+Do not reuse a previously exposed API key. Rotate it and update both the node service variable and panel node configuration. Railway Variables are required for secret values; a public Git repository cannot securely provision them automatically.
