@@ -4,7 +4,6 @@ set -eu
 CERT_DIR="/app/certs"
 CERT_KEY="$CERT_DIR/ssl_key.pem"
 CERT_FILE="$CERT_DIR/ssl_cert.pem"
-TLS_SERVER_NAME="${TLS_SERVER_NAME:-}"
 
 mkdir -p "$CERT_DIR"
 
@@ -22,13 +21,10 @@ elif ! printf '%s\n' "$SAN_OUTPUT" | grep -Fq "DNS:pasarguard-nood.railway.inter
   NEED_CERT=1
 elif ! printf '%s\n' "$SAN_OUTPUT" | grep -Fq "DNS:localhost"; then
   NEED_CERT=1
-elif [ -n "$TLS_SERVER_NAME" ] && ! printf '%s\n' "$SAN_OUTPUT" | grep -Fq "DNS:$TLS_SERVER_NAME"; then
-  NEED_CERT=1
 fi
 
 if [ "$NEED_CERT" -eq 1 ]; then
-  {
-    cat <<'EOF'
+  cat > /tmp/san.cnf <<'EOF'
 [req]
 distinguished_name = req_distinguished_name
 x509_extensions = v3_req
@@ -46,11 +42,6 @@ DNS.2 = pasarguard-nod.railway.internal
 DNS.3 = pasarguard-nood.railway.internal
 DNS.4 = localhost
 EOF
-
-    if [ -n "$TLS_SERVER_NAME" ]; then
-      printf 'DNS.5 = %s\n' "$TLS_SERVER_NAME"
-    fi
-  } > /tmp/san.cnf
 
   openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
     -keyout "$CERT_KEY" \
